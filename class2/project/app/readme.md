@@ -1,8 +1,7 @@
 
+cd class2/project/app
 
-cd ~/devops-bootcamp/may-bootcamp/class2/project/app
-
-docker-compose up --build
+docker-compose up -d --build
 
 # or 
 
