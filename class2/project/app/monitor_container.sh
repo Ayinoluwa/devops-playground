@@ -48,6 +48,25 @@ initialize_logs() {
     fi
 }
 
+rotate_logs() {
+    local logfile="$1"
+    local maxsize_kb=100  # Max file size before rotating
+    local max_files=5     # How many rotated files to keep
+
+    if [ -f "$logfile" ]; then
+        local size_kb
+        size_kb=$(du -k "$logfile" | cut -f1)
+        if [ "$size_kb" -ge "$maxsize_kb" ]; then
+            for ((i=max_files-1; i>=1; i--)); do
+                if [ -f "$logfile.$i" ]; then
+                    mv "$logfile.$i" "$logfile.$((i+1))"
+                fi
+            done
+            cp "$logfile" "$logfile.1"
+            : > "$logfile"
+        fi
+    fi
+}
 # ========================================
 # LOGGING FUNCTIONS
 # ========================================
@@ -170,6 +189,11 @@ check_app_health() {
 # Core monitoring function that performs all checks
 monitor_container() {
     log_message "INFO" "Starting container monitoring for $CONTAINER_NAME"
+
+    # Rotate logs before writing new data
+    rotate_logs "$LOG_FILE"
+    rotate_logs "$ALERT_LOG"
+    rotate_logs "$METRICS_FILE"
     
     # Verify container exists (running or stopped)
     if ! docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
